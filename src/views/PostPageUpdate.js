@@ -11,27 +11,25 @@ export default function PostPageUpdate() {
   const params = useParams();
   const id = params.id;
   const [caption, setCaption] = useState("");
-  const [image, setImage] = useState(null); // For the new image
+  const [image, setImage] = useState(null); 
   const [previewImage, setPreviewImage] = useState("https://cdn-icons-png.flaticon.com/128/2496/2496846.png");
-  const [originalImageUrl, setOriginalImageUrl] = useState(""); // Store the original image URL
-  const [originalImageName, setOriginalImageName] = useState(""); // Store the original image name
+  const [originalImageUrl, setOriginalImageUrl] = useState(""); 
+  const [originalImageName, setOriginalImageName] = useState(""); 
   const [user, loading] = useAuthState(auth);
   const navigate = useNavigate();
 
   async function updatePost() {
-    let imageUrl = originalImageUrl; // Default to the original image URL
+    let imageUrl = originalImageUrl; 
 
-    // If a new image is selected, upload it
     if (image) {
       const imageReference = ref(storage, `images/${image.name}`);
       const response = await uploadBytes(imageReference, image);
       imageUrl = await getDownloadURL(response.ref);
     }
 
-    // Update the post with new caption and either new or existing image URL
     await updateDoc(doc(db, "posts", id), {
       caption,
-      image: imageUrl, // Use the new or existing image URL
+      image: imageUrl, 
     });
 
     navigate("/");
@@ -41,12 +39,10 @@ export default function PostPageUpdate() {
     const postDocument = await getDoc(doc(db, "posts", id));
     const post = postDocument.data();
     setCaption(post.caption);
-    setOriginalImageUrl(post.image); // Store the original image URL
+    setOriginalImageUrl(post.image); 
     setPreviewImage(post.image);
     
-    // You need to set the original image name if you have it in the post data
-    // Otherwise, you can set it to a default name or modify the storage logic to include filenames.
-    const imageName = post.image.split('/').pop(); // Assuming the image URL structure includes the filename
+    const imageName = post.image.split('/').pop(); 
     setOriginalImageName(imageName);
   }
 
@@ -104,8 +100,8 @@ export default function PostPageUpdate() {
               onChange={(e) => {
                 const imageFile = e.target.files[0];
                 const previewImage = URL.createObjectURL(imageFile);
-                setImage(imageFile); // Set the new image
-                setPreviewImage(previewImage); // Show preview of the new image
+                setImage(imageFile); 
+                setPreviewImage(previewImage); 
               }}
             />
             <Form.Text className="text-muted">

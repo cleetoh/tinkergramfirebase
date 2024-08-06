@@ -10,7 +10,7 @@ import Navigation from "./navibar";
 export default function PostPageHome() {
   const [posts, setPosts] = useState([]);
   const [user] = useAuthState(auth);
-  const navigate = useNavigate(); // Add useNavigate hook
+  const navigate = useNavigate(); 
 
   async function getAllPosts() {
     const query = await getDocs(collection(db, "posts"));
@@ -26,7 +26,7 @@ export default function PostPageHome() {
 
   useEffect(() => {
     if (!user) {
-      navigate("/login"); // Redirect to login if user is not authenticated
+      navigate("/login"); 
     }
   }, [user, navigate]);
 
