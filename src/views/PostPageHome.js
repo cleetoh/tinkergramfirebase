@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Container, Image, Row } from "react-bootstrap";
+import { Container, Image, Row, Card, Badge } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
@@ -15,7 +15,7 @@ export default function PostPageHome() {
   async function getAllPosts() {
     const query = await getDocs(collection(db, "posts"));
     const posts = query.docs.map((doc) => {
-      return { id: doc.id, ...doc.data() };
+      return { id: doc.id, ...doc.data() }; 
     });
     setPosts(posts);
   }
@@ -31,7 +31,7 @@ export default function PostPageHome() {
   }, [user, navigate]);
 
   const ImagesRow = () => {
-    return posts.map((post, index) => <ImageSquare key={index} post={post} />);
+    return posts.map((post) => <ImageSquare key={post.id} post={post} />);
   };
 
   return (
@@ -51,7 +51,9 @@ export default function PostPageHome() {
 }
 
 function ImageSquare({ post }) {
-  const { image, id } = post;
+  const { image, id, caption, likes } = post; 
+  const numberOfLikes = likes ? likes.length : 0; 
+
   return (
     <Link
       to={`post/${id}`}
@@ -59,17 +61,26 @@ function ImageSquare({ post }) {
         width: "18rem",
         marginLeft: "1rem",
         marginTop: "2rem",
+        textDecoration: "none", 
+        color: "black", 
       }}
     >
-      <Image
-        src={image}
-        style={{
-          objectFit: "cover",
-          width: "18rem",
-          height: "18rem",
-          border: "3px solid black",
-        }}
-      />
+      <Card style={{
+        width: "18rem",
+        border: "3px solid black",
+      }}>
+        <Image
+          src={image}
+          style={{
+            objectFit: "cover",
+            height: "18rem",
+          }}
+        />
+        <Card.Body>
+          <Card.Text>{caption}</Card.Text> 
+          <Badge pill bg="primary">{numberOfLikes} Likes</Badge> 
+        </Card.Body>
+      </Card>
     </Link>
   );
 }

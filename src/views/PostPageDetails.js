@@ -1,23 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { Card, Col, Container, Image, Nav, Navbar, Row, Form, Button } from "react-bootstrap";
+import { Card, Col, Container, Image, Nav, Navbar, Row, Form, Button, Badge } from "react-bootstrap";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useNavigate, useParams } from "react-router-dom";
-import { auth, db } from "../firebase";
+import { auth, db, storage } from "../firebase";
 import { signOut } from "firebase/auth";
 import { deleteDoc, doc, getDoc, collection, addDoc, query, where, getDocs, updateDoc } from "firebase/firestore";
-import { getStorage, ref, deleteObject } from "firebase/storage";
-import { storage } from "../firebase";
+import { ref, deleteObject } from "firebase/storage";
 
 export default function PostPageDetails() {
   const [caption, setCaption] = useState("");
   const [image, setImage] = useState("");
-  const [comments, setComments] = useState([]); 
+  const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingCommentText, setEditingCommentText] = useState("");
+  const [likes, setLikes] = useState([]); 
   const params = useParams();
   const id = params.id;
-  const [user, loading] =  useAuthState(auth);
+  const [user, loading] = useAuthState(auth);
   const navigate = useNavigate();
 
   async function getComments(postId) {
@@ -27,8 +27,17 @@ export default function PostPageDetails() {
     setComments(commentsData);
   }
 
+  async function getPost(postId) {
+    const postDocument = await getDoc(doc(db, "posts", postId));
+    const post = postDocument.data();
+    setCaption(post.caption);
+    setImage(post.image);
+    setLikes(post.likes || []); 
+    getComments(postId); 
+  }
+
   async function addComment() {
-    if (!newComment) return; 
+    if (!newComment) return;
     await addDoc(collection(db, "comments"), {
       postId: id,
       userId: user.uid,
@@ -54,26 +63,35 @@ export default function PostPageDetails() {
     getComments(id);
   }
 
-  async function deletePost(id) {
-    const postDocument = await getDoc(doc(db, "posts", id));
+  async function deletePost(postId) {
+    const postDocument = await getDoc(doc(db, "posts", postId));
     const post = postDocument.data();
     const desertRef = ref(storage, `images/${post.imageName}`);
+    
     deleteObject(desertRef).then(() => {
-        console.log("deleted from firebase storage");
+      console.log("deleted from firebase storage");
     }).catch((error) => {
-        console.error(error.message);
+      console.error(error.message);
     });
 
-    await deleteDoc(doc(db, "posts", id));
+    await deleteDoc(doc(db, "posts", postId));
     navigate("/");
   }
 
-  async function getPost(id) {
-    const postDocument = await getDoc(doc(db, "posts", id));
-    const post = postDocument.data();
-    setCaption(post.caption);
-    setImage(post.image);
-    getComments(id);
+  async function toggleLike() {
+    const postRef = doc(db, "posts", id);
+    const userId = user.uid;
+
+    if (likes.includes(userId)) {
+      const updatedLikes = likes.filter(id => id !== userId);
+      await updateDoc(postRef, { likes: updatedLikes });
+      setLikes(updatedLikes); 
+    } else {
+      
+      const updatedLikes = [...likes, userId];
+      await updateDoc(postRef, { likes: updatedLikes });
+      setLikes(updatedLikes);
+    }
   }
 
   useEffect(() => {
@@ -86,31 +104,31 @@ export default function PostPageDetails() {
     <>
       <Navbar variant="light" bg="light">
         <Container style={{ backgroundColor: "lightblue" }}>
-          <Navbar.Brand href="/" style={{ color: "black", fontFamily: "garamond" }}>
-            aashleygram
-          </Navbar.Brand>
+          <Navbar.Brand href="/" style={{ color: "black", fontFamily: "garamond" }}>aashleygram</Navbar.Brand>
           <Nav>
             <Nav.Link href="/add">New Post</Nav.Link>
             {user && <Nav.Link disabled style={{ color: "blue" }}>{user.email}</Nav.Link>} 
             <Nav.Link onClick={() => signOut(auth)}>Sign Out🚪</Nav.Link>
           </Nav>
         </Container>
-      </Navbar>      
-      <Container style={{ 
-          backgroundColor: "#f0f8ff", 
-          minHeight: "100vh", 
-          padding: "20px" 
-      }}>
+      </Navbar>
+      <Container style={{ backgroundColor: "#f0f8ff", minHeight: "100vh", padding: "20px" }}>
         <Row style={{ marginTop: "2rem" }}>
           <Col md="6">
-            <Image src={image} style={{ width: "100%", border: "3px solid black"}} />
+            <Image src={image} style={{ width: "100%", border: "3px solid black" }} />
           </Col>
           <Col>
             <Card>
               <Card.Body style={{ backgroundColor: "ivory", border: "3px solid khaki" }}>
                 <Card.Text>{caption}</Card.Text>
                 <Card.Link href={`/update/${id}`}>Edit</Card.Link>
-                <Card.Link onClick={() => deletePost(id)} style={{ cursor: "pointer" }}> Delete </Card.Link>
+                <Card.Link onClick={() => deletePost(id)} style={{ cursor: "pointer" }}>Delete</Card.Link>
+                <div style={{ marginTop: "10px" }}>
+                  <Badge pill bg="primary">{likes.length} Likes</Badge>
+                  <Button onClick={toggleLike} style={{ marginLeft: "10px", backgroundColor: "purple" }}>
+                    {likes.includes(user?.uid) ? "Unlike" : "Like"}
+                  </Button>
+                </div>
               </Card.Body>
             </Card>
           </Col>
